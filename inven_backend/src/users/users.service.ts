@@ -1,4 +1,4 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateUserDto } from 'src/dto/users.dto';
 import { UsersEntity } from 'src/entities/users.entity';
@@ -14,18 +14,44 @@ export class UserService {
 
   async createUser(createUserDto: CreateUserDto) {
     try {
-      const user = this.users.findOne({
+      console.log(createUserDto);
+      const user = await this.users.findOne({
         where: { email: createUserDto.email },
       });
+
       if (user) {
-        throw new HttpException('이미 존재하는 이메일입니다.', 409);
+        throw new HttpException(
+          '이미 존재하는 이메일입니다.',
+          HttpStatus.CONFLICT,
+        );
       }
 
       const hashPassword = this.hashPassword(createUserDto.password);
-      createUserDto.password = hashPassword;
 
-      const result = await this.users.create(createUserDto);
+      const result = await this.users.create({
+        ...createUserDto,
+        password: hashPassword,
+      });
       return await this.users.save(result);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async dupEmail(email: string) {
+    try {
+      const user = await this.users.findOne({
+        where: { email: email },
+      });
+
+      if (user) {
+        throw new HttpException(
+          '이미 존재하는 이메일입니다.',
+          HttpStatus.CONFLICT,
+        );
+      }
+
+      return { message: '사용 가능한 이메일입니다.', available: true };
     } catch (e) {
       console.error(e);
     }
