@@ -39,22 +39,24 @@ export class UserService {
   }
 
   async dupEmail(email: string) {
-    try {
-      const user = await this.users.findOne({
-        where: { email: email },
-      });
+    const regex =
+      /^[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*@[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*.[a-zA-Z]{2,3}$/i;
 
-      if (user) {
-        throw new HttpException(
-          '이미 존재하는 이메일입니다.',
-          HttpStatus.CONFLICT,
-        );
-      }
-
-      return { message: '사용 가능한 이메일입니다.', available: true };
-    } catch (e) {
-      console.error(e);
+    if (!regex.test(email)) {
+      throw new HttpException('이메일 형식을 맞춰주세요.', HttpStatus.CONFLICT);
     }
+
+    const user = await this.users.findOne({
+      where: { email: email },
+    });
+    if (user) {
+      throw new HttpException(
+        '이미 존재하는 이메일입니다.',
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    return { available: true };
   }
 
   private hashPassword(password: string) {
